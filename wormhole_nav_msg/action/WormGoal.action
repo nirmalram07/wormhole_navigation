@@ -1,0 +1,12 @@
+#Goal
+geometry_msgs/PoseStamped goal_pose
+int16 map_id
+
+---
+
+#Result
+string msg
+
+---
+#Feedback
+geometry_msgs/PoseStamped current_pose

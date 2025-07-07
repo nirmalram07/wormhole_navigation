@@ -1,6 +1,6 @@
 from setuptools import find_packages, setup
 
-package_name = 'turtlebot3_spawn'
+package_name = 'pose_fetch'
 
 setup(
     name=package_name,
@@ -10,20 +10,16 @@ setup(
         ('share/ament_index/resource_index/packages',
             ['resource/' + package_name]),
         ('share/' + package_name, ['package.xml']),
-        ('share/' + package_name + '/launch', ['launch/turtlebot_gazebo.launch.py']),
-        ('share/' + package_name + '/map', ['map/map1.yaml','map/map1.pgm', 'map/map2.pgm', 'map/map2.yaml', 'map/map3.pgm', 'map/map3.yaml']),
-        ('share/' + package_name + '/config', ['config/nav2_params.yaml']) 
     ],
     install_requires=['setuptools'],
     zip_safe=True,
-    maintainer='nirmal',
+    maintainer='Nirmal Ram',
     maintainer_email='nirmalcgvfx@gmail.com',
     description='TODO: Package description',
-    license='TODO: License declaration',
+    license='GPL-2.0-only',
     tests_require=['pytest'],
     entry_points={
         'console_scripts': [
-            'amcl_pose_intializer = turtlebot3_spawn.set_init_pose:main'
         ],
     },
 )
