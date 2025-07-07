@@ -1,8 +1,11 @@
 #include "rclcpp/rclcpp.hpp"
+#include <mutex>
+#include <vector>
 #include "rclcpp_action/rclcpp_action.hpp"
 #include "nav2_msgs/action/navigate_to_pose.hpp"
 #include "nav2_msgs/srv/load_map.hpp"
 #include "wormhole_nav_msg/action/worm_goal.hpp"
+#include "wormhole_nav_msg/srv/pose_loader.hpp"
 #include "geometry_msgs/msg/pose_with_covariance_stamped.hpp"
 
 /**
@@ -17,6 +20,7 @@ using nav_to_pose_action_ = nav2_msgs::action::NavigateToPose;
 using nav_to_pose_handle_ = rclcpp_action::ClientGoalHandle<nav_to_pose_action_>;
 
 using load_map_srv_ = nav2_msgs::srv::LoadMap;
+using pose_loader_srv_ = wormhole_nav_msg::srv::PoseLoader;
 using pose_msg_ = geometry_msgs::msg::PoseWithCovarianceStamped;
 
 public:
@@ -35,13 +39,17 @@ private:
     void clientFeedbackCallback(const rclcpp_action::ClientGoalHandle<nav_to_pose_action_>::SharedPtr &goal_handle,
         const std::shared_ptr<const nav_to_pose_action_::Feedback> feedback);
 
+    void calculate_traverse_order(int start, int end); 
+
+    std::mutex mutex_;
     std::shared_ptr<worm_goal_handle_> control_handle_;
     rclcpp_action::Server<worm_goal_action_>::SharedPtr control_server_;
     rclcpp_action::Client<nav_to_pose_action_>::SharedPtr nav_command_;
 
     rclcpp::Client<load_map_srv_>::SharedPtr load_map_;
+    rclcpp::Client<pose_loader_srv_>::SharedPtr get_pose_;
     rclcpp::Publisher<pose_msg_>::SharedPtr intial_pose_;
 
     int current_map_{1};
-    int direction_map[3];
+    std::vector<int> direction_map_;
 };
