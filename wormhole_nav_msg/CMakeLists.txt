@@ -12,7 +12,6 @@ find_package(rosidl_default_generators REQUIRED)
 
 rosidl_generate_interfaces(${PROJECT_NAME}
    action/WormGoal.action
-   srv/PoseLoader.srv
    DEPENDENCIES builtin_interfaces geometry_msgs
 )
 

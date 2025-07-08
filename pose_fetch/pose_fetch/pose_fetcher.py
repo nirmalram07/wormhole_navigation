@@ -37,10 +37,10 @@ class TableCreatorNode(Node):
             self.cursor.execute('DELETE FROM json_data')
             # Sample JSON data for four rows
             json_rows = [
-                {"id": 1, "name": "Item 1", "value": 100},
-                {"id": 2, "name": "Item 2", "value": 200},
-                {"id": 3, "name": "Item 3", "value": 300},
-                {"id": 4, "name": "Item 4", "value": 400}
+                {"x_pose": -1.064, "y_pose": 3.038, "z_orient": 0.718, "w_orient": 0.695},
+                {"x_pose": -1.045, "y_pose": 3.119, "z_orient": 0.718, "w_orient": 0.695},
+                {"x_pose": -4.678, "y_pose": 8.816, "z_orient": 0.999, "w_orient": 0.044},
+                {"x_pose": -4.882, "y_pose": 8.709, "z_orient": -0.973, "w_orient": 0.073}
             ]
 
             # Insert JSON data

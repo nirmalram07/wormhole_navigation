@@ -5,8 +5,7 @@ using std::placeholders::_2;
 
 WormholeNav::WormholeNav() : Node("wormhole_navigator"){
 
-    intial_pose_ = this->create_publisher<pose_msg_>("/initial_pose", 10);
-    get_pose_ = this->create_client<pose_loader_srv_>("/wormhole/load_pose");
+    intial_pose_ = this->create_publisher<pose_cov_>("/initial_pose", 10);
     load_map_ = this->create_client<load_map_srv_>("/map_server/load_map");
 
     nav_command_ = rclcpp_action::create_client<nav_to_pose_action_>(this, "/navigate_to_pose");
@@ -48,6 +47,8 @@ rclcpp_action::GoalResponse WormholeNav::wnGoalCallback(const rclcpp_action::Goa
 
 rclcpp_action::CancelResponse WormholeNav::wnCancelCallback(const std::shared_ptr<worm_goal_handle_> goal_handle){
 
+    (void)goal_handle;
+    
     direction_map_.clear();
     nav_command_->async_cancel_all_goals();
     return rclcpp_action::CancelResponse::ACCEPT;
@@ -55,20 +56,112 @@ rclcpp_action::CancelResponse WormholeNav::wnCancelCallback(const std::shared_pt
 
 void WormholeNav::wnAcceptedCallback(const std::shared_ptr<worm_goal_handle_> goal_handle){
 
+    control_handle_ = goal_handle;
     wnExecuteCallback(goal_handle);
 }
 
 void WormholeNav::wnExecuteCallback(const std::shared_ptr<worm_goal_handle_> goal_handle){
+
+    goal_pose_ = goal_handle->get_goal()->goal_pose;
     
     if(goal_handle->get_goal()->map_id!=current_map_){
-        calculate_traverse_order(current_map_, goal_handle->get_goal()->map_id);
+        calculateTraverseOrder(current_map_, goal_handle->get_goal()->map_id);
+        sendNavGoal();
     }
     else{
-        
+        sendNavGoal();
     }
 }
 
-void WormholeNav::calculate_traverse_order(int start, int end){
+void WormholeNav::sendNavGoal(){
+    
+    auto nav_goal_ = nav_to_pose_action_::Goal();
+    
+    if(direction_map_.size() == 1){
+        nav_goal_.pose = goal_pose_;
+    }
+    else{
+        std::set<std::pair<int, int>> use_method2 = {
+            {2, 3},
+            {3, 2}
+        };
+        std::pair<int, int> move = {direction_map_[0], direction_map_[1]};
+    
+        if (use_method2.count(move)) {
+            map_pose_ = pose_fetcher_->get_pose_from_db(1);
+        } else {
+            map_pose_ = pose_fetcher_->get_pose_from_db(0);
+        }
+
+        nav_goal_.pose.pose = map_pose_.pose.pose;
+    
+    }
+
+    auto nav_goal_options_ = rclcpp_action::Client<nav_to_pose_action_>::SendGoalOptions();
+    nav_goal_options_.goal_response_callback = std::bind(&WormholeNav::clientResponseCallback, this, _1);
+    nav_goal_options_.result_callback = std::bind(&WormholeNav::clientResultCallback, this, _1);
+    nav_goal_options_.feedback_callback = std::bind(&WormholeNav::clientFeedbackCallback, this, _1, _2);
+
+    nav_command_->async_send_goal(nav_goal_, nav_goal_options_);
+
+    direction_map_.erase(direction_map_.begin());
+}
+
+void WormholeNav::clientResponseCallback(const rclcpp_action::ClientGoalHandle<nav_to_pose_action_>::SharedPtr &goal_handle){
+    (void)goal_handle;
+}
+
+void WormholeNav::clientResultCallback(const rclcpp_action::ClientGoalHandle<nav_to_pose_action_>::WrappedResult &result){
+
+    if (result.code == rclcpp_action::ResultCode::SUCCEEDED) {
+
+        RCLCPP_INFO(this->get_logger(), "Navigate to Pose - success");
+        if(!direction_map_.empty()){
+            handleServices();
+        }
+        else{
+            worm_result_.msg = "Success";
+            auto result_ptr = std::make_shared<worm_goal_action_::Result>(worm_result_);
+            control_handle_->succeed(result_ptr); 
+        }
+    }
+    else if(result.code == rclcpp_action::ResultCode::ABORTED){
+        worm_result_.msg = "Navigation aborted";
+        auto result_ptr = std::make_shared<worm_goal_action_::Result>(worm_result_);
+        control_handle_->abort(result_ptr); 
+    }
+    else if(result.code == rclcpp_action::ResultCode::CANCELED){
+        worm_result_.msg = "Cancelled";
+        auto result_ptr = std::make_shared<worm_goal_action_::Result>(worm_result_);
+        control_handle_->canceled(result_ptr);
+    }
+}
+
+void WormholeNav::clientFeedbackCallback(const rclcpp_action::ClientGoalHandle<nav_to_pose_action_>::SharedPtr &goal_handle,
+    const std::shared_ptr<const nav_to_pose_action_::Feedback> feedback){
+    
+    (void)goal_handle;
+    worm_feedback->current_pose = feedback->current_pose;
+    control_handle_->publish_feedback(worm_feedback);
+}
+
+void WormholeNav::handleServices(){
+
+    std::string pkg_name = "turtlebot3_spawn";
+
+    // Construct full map path: <package_share>/maps/map_3.yaml
+    std::string map_filename = "map_" + std::to_string(direction_map_.at(0)) + ".yaml";
+    std::string full_path = ament_index_cpp::get_package_share_directory(pkg_name) + "/maps/" + map_filename;;
+    
+    auto map_change_request_ = load_map_srv_::Request();
+    map_change_request_.map_url = full_path;
+
+    intial_pose_->publish(map_pose_);
+
+    sendNavGoal();
+}
+
+void WormholeNav::calculateTraverseOrder(int start, int end){
 
     std::vector<int> path;
 
