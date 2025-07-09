@@ -34,6 +34,7 @@ using pose_stamped_ = geometry_msgs::msg::PoseStamped;
 public:
     WormholeNav();
     ~WormholeNav() = default;
+    void init();
 
 private:
 
@@ -63,7 +64,7 @@ private:
     rclcpp::Client<pose_loader_srv_>::SharedPtr get_pose_;
     rclcpp::Publisher<pose_cov_>::SharedPtr intial_pose_;
 
-    int current_map_{0}, controller_result_{0};
+    int current_map_{1}, controller_result_{0};
     std::vector<int> direction_map_;
     pose_stamped_ goal_pose_;
     pose_cov_ map_pose_;

@@ -20,6 +20,10 @@ WormholeNav::WormholeNav() : Node("wormhole_navigator"){
     RCLCPP_INFO(this->get_logger(),"Wormhole Navigator is up and running... - wormhole_navigator");
 }
 
+void WormholeNav::init(){
+    pose_fetcher_ = std::make_shared<DBPoseFetcher>(shared_from_this());
+}
+
 rclcpp_action::GoalResponse WormholeNav::wnGoalCallback(const rclcpp_action::GoalUUID &uuid, std::shared_ptr<const worm_goal_action_::Goal> goal){
 
     (void)uuid;
@@ -48,7 +52,7 @@ rclcpp_action::GoalResponse WormholeNav::wnGoalCallback(const rclcpp_action::Goa
 rclcpp_action::CancelResponse WormholeNav::wnCancelCallback(const std::shared_ptr<worm_goal_handle_> goal_handle){
 
     (void)goal_handle;
-    
+
     direction_map_.clear();
     nav_command_->async_cancel_all_goals();
     return rclcpp_action::CancelResponse::ACCEPT;
@@ -56,15 +60,18 @@ rclcpp_action::CancelResponse WormholeNav::wnCancelCallback(const std::shared_pt
 
 void WormholeNav::wnAcceptedCallback(const std::shared_ptr<worm_goal_handle_> goal_handle){
 
+    RCLCPP_INFO(this->get_logger(), "Reached wormhole - accepted callback");
     control_handle_ = goal_handle;
     wnExecuteCallback(goal_handle);
 }
 
 void WormholeNav::wnExecuteCallback(const std::shared_ptr<worm_goal_handle_> goal_handle){
 
+    RCLCPP_INFO(this->get_logger(), "Reached wormhole - execute callback");
     goal_pose_ = goal_handle->get_goal()->goal_pose;
     
     if(goal_handle->get_goal()->map_id!=current_map_){
+        RCLCPP_INFO(this->get_logger(), "Current map no: %d goal_map_no: %d", current_map_, goal_handle->get_goal()->map_id);
         calculateTraverseOrder(current_map_, goal_handle->get_goal()->map_id);
         sendNavGoal();
     }
@@ -74,34 +81,53 @@ void WormholeNav::wnExecuteCallback(const std::shared_ptr<worm_goal_handle_> goa
 }
 
 void WormholeNav::sendNavGoal(){
+
+    RCLCPP_INFO(this->get_logger(), "Reached wormhole - sendNavGoal");
     
     auto nav_goal_ = nav_to_pose_action_::Goal();
     
     if(direction_map_.size() == 1){
         nav_goal_.pose = goal_pose_;
     }
-    else{
+    else {
+        RCLCPP_INFO(this->get_logger(), "Entered else block of - sendNavGoal");
+    
+        if (direction_map_.size() < 2) {
+            RCLCPP_FATAL(this->get_logger(), "direction_map_ has fewer than 2 elements. Cannot proceed.");
+            return;
+        }
+    
         std::set<std::pair<int, int>> use_method2 = {
             {2, 3},
             {3, 2}
         };
+    
         std::pair<int, int> move = {direction_map_[0], direction_map_[1]};
+        RCLCPP_INFO(this->get_logger(), "Constructed move pair: (%d, %d)", move.first, move.second);
+    
+        if (!pose_fetcher_) {
+            RCLCPP_FATAL(this->get_logger(), "pose_fetcher_ is nullptr!");
+            return;
+        }
     
         if (use_method2.count(move)) {
             map_pose_ = pose_fetcher_->get_pose_from_db(1);
         } else {
             map_pose_ = pose_fetcher_->get_pose_from_db(0);
         }
-
-        nav_goal_.pose.pose = map_pose_.pose.pose;
     
+        RCLCPP_INFO(this->get_logger(), "Fetched data from DB - sendNavGoal");
+    
+        nav_goal_.pose.pose = map_pose_.pose.pose;
     }
+    
 
     auto nav_goal_options_ = rclcpp_action::Client<nav_to_pose_action_>::SendGoalOptions();
     nav_goal_options_.goal_response_callback = std::bind(&WormholeNav::clientResponseCallback, this, _1);
     nav_goal_options_.result_callback = std::bind(&WormholeNav::clientResultCallback, this, _1);
     nav_goal_options_.feedback_callback = std::bind(&WormholeNav::clientFeedbackCallback, this, _1, _2);
 
+    RCLCPP_INFO(this->get_logger(), "Sending goal to navigate to pose");
     nav_command_->async_send_goal(nav_goal_, nav_goal_options_);
 
     direction_map_.erase(direction_map_.begin());
@@ -126,6 +152,7 @@ void WormholeNav::clientResultCallback(const rclcpp_action::ClientGoalHandle<nav
         }
     }
     else if(result.code == rclcpp_action::ResultCode::ABORTED){
+
         worm_result_.msg = "Navigation aborted";
         auto result_ptr = std::make_shared<worm_goal_action_::Result>(worm_result_);
         control_handle_->abort(result_ptr); 
@@ -182,4 +209,10 @@ void WormholeNav::calculateTraverseOrder(int start, int end){
 
     direction_map_.clear();
     direction_map_.assign(path.begin(), path.end());
+
+    RCLCPP_INFO(this->get_logger(), "Size of direction map after populating is: %ld", direction_map_.size());
+
+    for(size_t i =0; i<direction_map_.size(); i++){
+        RCLCPP_INFO(this->get_logger(), "Direction map value - %d", direction_map_[i]);
+    }
 }

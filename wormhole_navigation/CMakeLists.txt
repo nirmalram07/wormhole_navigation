@@ -54,7 +54,10 @@ target_link_libraries(${executable_name}
 # Install the executable
 install(TARGETS
   ${executable_name}
-  DESTINATION lib/${PROJECT_NAME}
+  ${library_name}
+  ARCHIVE DESTINATION lib
+  LIBRARY DESTINATION lib
+  RUNTIME DESTINATION lib/${PROJECT_NAME}
 )
 
 ament_export_include_directories(include)

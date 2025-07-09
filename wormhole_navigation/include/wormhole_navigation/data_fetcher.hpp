@@ -17,10 +17,10 @@ using pose_cov_ = geometry_msgs::msg::PoseWithCovarianceStamped;
  * @class DBPoseFetcher
  * @brief A ROS 2 node that interacts with an SQLite3 database to fetch poses with covariance.
  */
-class DBPoseFetcher : public rclcpp::Node {
+class DBPoseFetcher{
 
 public:
-    DBPoseFetcher();
+    explicit DBPoseFetcher(const rclcpp::Node::SharedPtr &node);
     ~DBPoseFetcher();
 
     /**
@@ -43,4 +43,5 @@ private:
 
     /// Pointer to the DB connection.
     sqlite3 *db_{nullptr};
+    rclcpp::Node::SharedPtr node_;
 };
