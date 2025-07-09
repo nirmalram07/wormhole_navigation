@@ -6,6 +6,8 @@ This project implements a **multi-map navigation system** using ROS 2 and Turtle
 
 The system is designed to simulate realistic indoor navigation across multiple, spatially-disjoint environments—ideal for facilities such as warehouses, hospitals, or labs.
 
+![Robot navigating in map1](robot_map1.png) ![Robot navigating in map2](robot_map2.png)
+
 ---
 
 <details>
@@ -57,7 +59,7 @@ source install/setup.bash
 ros2 run wormhole_navigation wormhole_navigator
 ```
 
-### Terminal tab 4(Wormhole navigation demo client)
+#### Terminal tab 4(Wormhole navigation demo client)
 
 ```bash
 source install/setup.bash
