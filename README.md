@@ -9,24 +9,59 @@ The system is designed to simulate realistic indoor navigation across multiple, 
 ---
 
 <details>
-  <summary><strong>Installation Instructions (Click to expand)</strong></summary>
+  <summary><strong>Installation Instructions</strong></summary>
 
 ### Prerequisites
 
-- ROS 2 Humble or later
-- TurtleBot3 packages
+- ROS 2 Humble
+- TurtleBot3
 - SLAM Toolbox
 - SQLite3
+- Navigation 2
+- nlohmann_json library
 
 ### Installation Steps
 
 ```bash
-cd ~/multi_map_nav_ws/src
-git clone <your_repo_url>
-cd ..
-rosdep install --from-paths src --ignore-src -r -y
-colcon build
+mkdir wormhole_navigation/src
+cd ~/wormhole_navigation/src
+git clone <https://github.com/nirmalram07/wormhole_navigation.git>
+cd ../
+colcon build --packages-select turtlbot3_gazebo turtlebot3_spawn wormhole_nav_msg
 source install/setup.bash
+colcon build --packages-select wormhole_navigation
+```
+
+### Launch methods
+
+(ps: I hope you're inside the wormhole_navigation folder)
+
+#### Terminal tab 1(Gazebo custom world launcher)
+
+```bash
+source install/setup.bash
+ros2 launch turtlebot3_gazebo turtlebot3_world.launch.py
+```
+
+#### Terminal tab 2(Navigation 2 launcher)
+
+```bash
+source install/setup.bash
+ros2 launch turtlebot3_spawn turtlebot_gazebo.launch.py
+```
+
+#### Terminal tab 3(Flow control server)
+
+```bash
+source install/setup.bash
+ros2 run wormhole_navigation wormhole_navigator
+```
+
+### Terminal tab 4(Wormhole navigation demo client)
+
+```bash
+source install/setup.bash
+ros2 run turtlebot3_spawn wormhole_nav_client
 ```
 
 </details>
@@ -45,16 +80,12 @@ source install/setup.bash
 
 ## Package Structure
 
+```bash
 wormhole_navigation/
 ├── turtlebot3_gazebo/ # Opensource package for spawning turtlebot3 in custom world
 ├── turtlebot3_spawn/ # Launch files for navigation and initial pose pub
 ├── wormhole_nav_msg/ # Custom action definition (.action file)
 ├── wormhole_navigation/ # Main logic: Custom action server and DB handling
 
-```
-
-```
-
-```
 
 ```
