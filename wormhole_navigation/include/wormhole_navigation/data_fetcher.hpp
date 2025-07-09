@@ -28,7 +28,7 @@ public:
      * @param row_number The row index of the pose to fetch.
      * @return A PoseWithCovarianceStamped message containing the retrieved pose.
      */
-    pose_cov_ get_pose_from_db(int row_number);
+    pose_cov_ get_pose_from_db(int from, int to);
 
 private:
     /**

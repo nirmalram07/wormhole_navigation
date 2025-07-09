@@ -23,7 +23,8 @@ setup(
     tests_require=['pytest'],
     entry_points={
         'console_scripts': [
-            'amcl_pose_intializer = turtlebot3_spawn.set_init_pose:main'
+            'amcl_pose_intializer = turtlebot3_spawn.set_init_pose:main',
+            'wormhole_client = turtlebot3_spawn.wormhole_client:main'
         ],
     },
 )

@@ -8,9 +8,11 @@ The system is designed to simulate realistic indoor navigation across multiple, 
 
 ![Robot navigating in map1](robot_map1.png)
 
+Robot navigating in map1 to the wormhole coordinates
+
 ![Robot navigating in map2](robot_map2.png)
 
----
+Robot navigating in map2 after passing through wormhole towards the goal
 
 <details>
   <summary><strong>Installation Instructions</strong></summary>
@@ -79,6 +81,7 @@ ros2 run turtlebot3_spawn wormhole_nav_client
 - Autonomous navigation using Nav2 and AMCL
 - SQL-based storage and retrieval of wormhole coordinates
 - Custom C++ Action Server for inter-map goal handling
+- Added doxygen style comments for ease of documenting
 
 ---
 
@@ -91,5 +94,14 @@ wormhole_navigation/
 ├── wormhole_nav_msg/ # Custom action definition (.action file)
 ├── wormhole_navigation/ # Main logic: Custom action server and DB handling
 
-
 ```
+
+---
+
+## Future Improvements
+
+- Implement a Breadth first search method for navigating to the goal pose's map. As scaling this to x number of maps is slightly difficult.
+
+- Implement error handling codes for edge cases.
+
+---
