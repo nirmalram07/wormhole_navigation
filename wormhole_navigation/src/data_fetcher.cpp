@@ -117,5 +117,5 @@ void DBPoseFetcher::insert_sample_data(){
     }
 
     sqlite3_finalize(stmt);
-    RCLCPP_INFO(node_->get_logger(), "Inserted 4 sample JSON rows");
+    RCLCPP_INFO(node_->get_logger(), "Inserted 2 JSON rows of coordinates");
 }

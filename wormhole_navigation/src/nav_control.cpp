@@ -60,14 +60,14 @@ rclcpp_action::CancelResponse WormholeNav::wnCancelCallback(const std::shared_pt
 
 void WormholeNav::wnAcceptedCallback(const std::shared_ptr<worm_goal_handle_> goal_handle){
 
-    RCLCPP_INFO(this->get_logger(), "Reached wormhole - accepted callback");
+    //RCLCPP_INFO(this->get_logger(), "Reached wormhole - accepted callback");
     control_handle_ = goal_handle;
     wnExecuteCallback(goal_handle);
 }
 
 void WormholeNav::wnExecuteCallback(const std::shared_ptr<worm_goal_handle_> goal_handle){
 
-    RCLCPP_INFO(this->get_logger(), "Reached wormhole - execute callback");
+    //RCLCPP_INFO(this->get_logger(), "Reached wormhole - execute callback");
     goal_pose_ = goal_handle->get_goal()->goal_pose;
     
     if(goal_handle->get_goal()->map_id!=current_map_){
@@ -82,7 +82,7 @@ void WormholeNav::wnExecuteCallback(const std::shared_ptr<worm_goal_handle_> goa
 
 void WormholeNav::sendNavGoal(){
 
-    RCLCPP_INFO(this->get_logger(), "Reached wormhole - sendNavGoal");
+    //RCLCPP_INFO(this->get_logger(), "Reached wormhole - sendNavGoal");
     
     auto nav_goal_ = nav_to_pose_action_::Goal();
     
@@ -90,7 +90,7 @@ void WormholeNav::sendNavGoal(){
         nav_goal_.pose = goal_pose_;
     }
     else {
-        RCLCPP_INFO(this->get_logger(), "Entered else block of - sendNavGoal");
+        //RCLCPP_INFO(this->get_logger(), "Entered else block of - sendNavGoal");
     
         if (direction_map_.size() < 2) {
             RCLCPP_FATAL(this->get_logger(), "direction_map_ has fewer than 2 elements. Cannot proceed.");
@@ -118,6 +118,7 @@ void WormholeNav::sendNavGoal(){
     
         RCLCPP_INFO(this->get_logger(), "Fetched data from DB - sendNavGoal");
     
+        nav_goal_.pose.header.frame_id = "map";
         nav_goal_.pose.pose = map_pose_.pose.pose;
     }
     
@@ -177,13 +178,32 @@ void WormholeNav::handleServices(){
     std::string pkg_name = "turtlebot3_spawn";
 
     // Construct full map path: <package_share>/maps/map_3.yaml
-    std::string map_filename = "map_" + std::to_string(direction_map_.at(0)) + ".yaml";
-    std::string full_path = ament_index_cpp::get_package_share_directory(pkg_name) + "/maps/" + map_filename;;
+    std::string map_filename = "map" + std::to_string(direction_map_.at(0)) + ".yaml";
+    std::string full_path = ament_index_cpp::get_package_share_directory(pkg_name) + "/map/" + map_filename;
+    
+    current_map_ = direction_map_.at(0);
     
     auto map_change_request_ = load_map_srv_::Request();
     map_change_request_.map_url = full_path;
 
-    intial_pose_->publish(map_pose_);
+    RCLCPP_INFO(this->get_logger(),"%s", full_path.c_str());
+
+    auto request = std::make_shared<nav2_msgs::srv::LoadMap::Request>();
+    *request = map_change_request_;
+
+    load_map_->async_send_request(request, std::bind(&WormholeNav::serviceResultHandler, this, _1));
+    RCLCPP_INFO(this->get_logger(),"Sent request to load map");
+
+    //intial_pose_->publish(map_pose_);
+    //RCLCPP_INFO(this->get_logger(),"publishing pose to amcl");
+
+}
+
+void WormholeNav::serviceResultHandler(rclcpp::Client<load_map_srv_>::SharedFuture Future){
+    
+    auto response = Future.get();
+    RCLCPP_INFO(this->get_logger(),"Received response from load map");
+    RCLCPP_INFO(this->get_logger(), "Sum: %d", (int)response->result);
 
     sendNavGoal();
 }
@@ -210,9 +230,9 @@ void WormholeNav::calculateTraverseOrder(int start, int end){
     direction_map_.clear();
     direction_map_.assign(path.begin(), path.end());
 
-    RCLCPP_INFO(this->get_logger(), "Size of direction map after populating is: %ld", direction_map_.size());
+    //RCLCPP_INFO(this->get_logger(), "Size of direction map after populating is: %ld", direction_map_.size());
 
-    for(size_t i =0; i<direction_map_.size(); i++){
+    /**for(size_t i =0; i<direction_map_.size(); i++){
         RCLCPP_INFO(this->get_logger(), "Direction map value - %d", direction_map_[i]);
-    }
+    }**/
 }
